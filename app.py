@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 st.set_page_config(page_title="Streamlit Deploy Test", page_icon="🚀")
-st.title("Streamlit Deploy Test")
+st.title("Streamlit Deploy Test2")
 st.write("A tiny app to verify your deployment pipeline. Choose a demo below.")
 
 option = st.selectbox("Choose demo", ["Line chart", "Dataframe", "Upload CSV"])
