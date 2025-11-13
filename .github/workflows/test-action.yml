@@ -34,14 +34,27 @@ jobs:
         run: |
           node testAction.js
 
-      - name: Commit resultTime.json to orphan results branch
+      # - name: Commit resultTime.json to orphan results branch
+      #   run: |
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      #     git checkout --orphan results
+      #     git rm -rf .
+      #     git add resultTime.json
+      #     git commit -m "update resultTime.json from workflow [skip ci]" || echo "no changes to commit"
+      #     git push origin results --force
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit resultTime.json to results branch (keep history)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan results
+          git fetch origin results
+          git checkout results || git checkout -b results
           git rm -rf .
+          cp ../resultTime.json .
           git add resultTime.json
           git commit -m "update resultTime.json from workflow [skip ci]" || echo "no changes to commit"
-          git push origin results --force
+          git push origin results
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
