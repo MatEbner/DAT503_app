@@ -30,12 +30,12 @@ jobs:
         run: |
           node testAction.js
 
-          - name: Rename artifact with run id
-            run: |
-              mv resultTime.json resultTime-${{ github.run_id }}.json
+      - name: Rename artifact with run id
+        run: |
+          mv resultTime.json resultTime-${{ github.run_id }}.json
 
-          - name: Upload result artifact
-            uses: actions/upload-artifact@v4
-            with:
-              name: resultTime-${{ github.run_id }}
-              path: resultTime-${{ github.run_id }}.json
+      - name: Upload result artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultTime-${{ github.run_id }}
+          path: resultTime-${{ github.run_id }}.json
