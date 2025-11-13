@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+group: ${{ github.workflow }}-${{ github.ref }}
+cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -30,14 +34,14 @@ jobs:
         run: |
           node testAction.js
 
-      - name: Commit resultTime.json back to repo
+      - name: Commit resultTime.json to orphan results branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          find . -type f ! -name 'resultTime.json' ! -path './.git/*' -delete
-          find . -type d -empty -delete
+          git checkout --orphan results
+          git rm -rf .
           git add resultTime.json
           git commit -m "update resultTime.json from workflow [skip ci]" || echo "no changes to commit"
-          git push origin HEAD:results --force
+          git push origin results --force
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
