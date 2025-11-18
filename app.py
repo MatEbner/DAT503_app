@@ -8,42 +8,31 @@ st.title("Streamlit Deploy Test2")
 st.write("A tiny app to verify your deployment pipeline. Choose a demo below.")
 
 # Show timestamp created by the GitHub Actions test workflow (if present)
-import os, json
-OWNER = "MatEbner"   # your GitHub username
-REPO  = "DAT503_app" # your repo name
-RAW_URL = f"https://raw.githubusercontent.com/{OWNER}/{REPO}/results/results_stock_prediction.json"
 
-# Load and display stock prediction results from GitHub (RAW_URL)
-st.header("Latest Stock Model Results (from GitHub)")
+# Show timestamp created by the GitHub Actions test workflow (if present)
+import os, json
+
+st.header("Latest Stock Model Results (local results_stock_prediction.json)")
 df_results = None
-try:
-    r = requests.get(RAW_URL, timeout=5)
-    if r.status_code == 200:
-        # Try to load as list of dicts (array of results)
-        payload = r.json()
-        if isinstance(payload, list):
-            import pandas as pd
-            df_results = pd.DataFrame(payload)
-        elif isinstance(payload, dict) and "results" in payload:
-            import pandas as pd
-            df_results = pd.DataFrame(payload["results"])
-except Exception as e:
-    st.info(f"Could not load results from GitHub: {e}")
+local_path = os.path.join("results_stock_prediction.json")
+if os.path.exists(local_path):
+    try:
+        df_results = pd.read_json(local_path)
+    except Exception as e:
+        st.info(f"Could not load results_stock_prediction.json: {e}")
+else:
+    st.info("No results_stock_prediction.json file found in the project folder.")
 
 if df_results is not None and not df_results.empty:
-    # Convert epoch-ms to datetime for Date column
     if "Date" in df_results.columns:
         try:
             df_results["Date"] = pd.to_datetime(df_results["Date"], unit="ms")
         except Exception:
             pass
     st.dataframe(df_results)
-    # Show a summary: top 5 by ProbUp
     if "ProbUp" in df_results.columns:
         st.subheader("Top 5 Stocks by ProbUp")
         st.table(df_results.sort_values("ProbUp", ascending=False).head(5)[["Ticker", "Date", "ProbUp", "Signal"]])
-else:
-    st.info("No remote stock prediction results found. Run the model and push results to GitHub.")
 
 # time_path = os.path.join("results_stock_prediction.json")
 # if os.path.exists(time_path):
