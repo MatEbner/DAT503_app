@@ -1,4 +1,4 @@
-name: CronJob Action (create results_stock_prediction.json)
+name: CronJob Action (fetch prices and evaluate results)
 
 on:
   push:
@@ -8,36 +8,60 @@ on:
     - cron: "*/10 * * * *"
   workflow_dispatch:
 concurrency:
-  group: results-update
+  group: fetch-evaluation-update
   cancel-in-progress: true
 
 permissions:
   contents: write
 
 jobs:
-  create-results:
+  fetch-prices:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           persist-credentials: true
-
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+      - name: Run data_fetching_prices_stooq.py
+        run: |
+          python data_fetching_prices_stooq.py
+      - name: Commit new/updated price CSVs to prices folder
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/prices
+          git commit -m "update prices from workflow [skip ci]" || echo "no changes to commit"
+          git push origin main --force
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  create-results:
+    runs-on: ubuntu-latest
+    needs: fetch-prices
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
       - name: Run up_down_evalutation_all_v0.11.py
         run: |
           python up_down_evalutation_all_v0.11.py
-
       - name: Commit results_stock_prediction.json to folder
         run: |
           git config user.name "github-actions[bot]"
