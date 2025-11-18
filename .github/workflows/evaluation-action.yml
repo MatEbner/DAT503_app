@@ -15,7 +15,7 @@ permissions:
   contents: write
 
 jobs:
-  test:
+  create-results:
     runs-on: ubuntu-latest
 
     steps:
