@@ -1,180 +1,87 @@
 import streamlit as st
-import requests
-import pandas as pd
-import numpy as np
 
-st.set_page_config(page_title="Streamlit Deploy Test", page_icon="🚀")
-st.title("Streamlit Deploy Test2")
-st.write("A tiny app to verify your deployment pipeline. Choose a demo below.")
+# Import tab renderer functions from dedicated modules
+from tabs import (
+    render_share_tab,  # Function rendering the share overview tab content
+    render_probability_tab,  # Function rendering probability metrics tab content
+    render_classification_tab,  # Function rendering classification report tab content
+)
 
-# Show timestamp created by the GitHub Actions test workflow (if present)
+# Helper callbacks to ensure at least one signal checkbox stays selected
+def _global_up_changed():
+    if not st.session_state.get('global_include_up') and not st.session_state.get('global_include_down'):
+        st.session_state['global_include_down'] = True
+def _global_down_changed():
+    if not st.session_state.get('global_include_down') and not st.session_state.get('global_include_up'):
+        st.session_state['global_include_up'] = True
 
-# Show timestamp created by the GitHub Actions test workflow (if present)
-import os, json
+st.set_page_config(page_title="Share Analytic Dashboard", page_icon="📈", layout="wide")
+st.title("📈 Share Analytic Dashboard")
+st.write("Welcome to the prototypical stock analysis dashboard. Our goal is to provide insights into stock market trends and model predictions.")
 
-st.header("Latest Stock Model Results (local results_stock_prediction.json)")
-df_results = None
-local_path = os.path.join("results_stock_prediction.json")
-if os.path.exists(local_path):
-    try:
-        df_results = pd.read_json(local_path)
-    except Exception as e:
-        st.info(f"Could not load results_stock_prediction.json: {e}")
-else:
-    st.info("No results_stock_prediction.json file found in the project folder.")
+# Main app function for the layout and tab rendering
+def main():
+    # Global sidebar filters
+    st.sidebar.header("Filters")
 
-if df_results is not None and not df_results.empty:
-    if "Date" in df_results.columns:
-        try:
-            df_results["Date"] = pd.to_datetime(df_results["Date"], unit="ms")
-        except Exception:
-            pass
-    st.dataframe(df_results)
-    if "ProbUp" in df_results.columns:
-        st.subheader("Top 5 Stocks by ProbUp")
-        st.table(df_results.sort_values("ProbUp", ascending=False).head(5)[["Ticker", "Date", "ProbUp", "Signal"]])
+    sort_option = st.sidebar.selectbox(
+        "Sort order",
+        options=["ProbUp descending", "ProbUp ascending", "Alphabetical (Ticker)"],
+        index=0,
+        key="global_sort_order",
+        help="Choose how to sort.",
+    )
 
-# time_path = os.path.join("results_stock_prediction.json")
-# if os.path.exists(time_path):
-#     try:
-#         with open(time_path, "r", encoding="utf-8") as f:
-#             payload = json.load(f)
-#             ts = payload.get("time")
-#             if ts:
-#                 st.markdown(f"**Latest workflow run time:** {ts}")
-#     except Exception:
-#         # ignore parse errors
-#         pass
+    limit_option = st.sidebar.selectbox(
+        "Results to show",
+        options=[10, 20, 30, "All"],
+        index=0,
+        key="global_limit",
+        help="Limit how many items are displayed after sorting.",
+    )
 
-option = st.selectbox("Choose demo", ["Line chart", "Dataframe", "Upload CSV", "Results (results_stock_prediction.json)", "Price: V (Visa)"])
+    up = st.sidebar.checkbox("Include UP", True, key="global_include_up", on_change=_global_up_changed)
 
-if option == "Line chart":
-    st.header("Random line chart")
-    df = pd.DataFrame(np.random.randn(30, 3), columns=["a", "b", "c"]) 
-    st.line_chart(df)
+    down = st.sidebar.checkbox("Include DOWN", True, key="global_include_down", on_change=_global_down_changed)
 
-elif option == "Dataframe":
-    st.header("Sample dataframe")
-    df = pd.DataFrame({"x": range(20), "y": np.random.rand(20)})
-    st.dataframe(df)
-    st.bar_chart(df.set_index("x"))
+    prob_range = st.sidebar.slider(
+        "ProbUp range",
+        min_value=0.0,
+        max_value=1.0,
+        value=(0.0, 1.0),
+        step=0.01,
+        key="global_prob_range",
+        help="Show predictions whose ProbUp falls within this range.",
+    )
 
-elif option == "Results (results_stock_prediction.json)":
-    st.header("Model results (results_stock_prediction.json)")
-    import os
-    path = os.path.join("results_stock_prediction.json")
-    if os.path.exists(path):
-        try:
-            df = pd.read_json(path)
-        except Exception as e:
-            st.error(f"Failed to read results_stock_prediction.json: {e}")
-        else:
-            # Convert epoch-ms to datetime and format
-            if "Date" in df.columns:
-                try:
-                    df["Date"] = pd.to_datetime(df["Date"], unit="ms")
-                except Exception:
-                    # if Date is already readable, ignore
-                    pass
+    share_tab, probability_tab, classification_tab = st.tabs([
+        "Share Information", "Probability Information", "Classification Area"
+    ])
 
-            # Allow filtering
-            st.write(f"Loaded {len(df)} rows from `results_stock_prediction.json`.")
-            cols = df.columns.tolist()
-            with st.sidebar.expander("Results filters"):
-                signals = df["Signal"].unique().tolist() if "Signal" in df.columns else []
-                selected_signals = st.multiselect("Signal", options=signals, default=signals)
-                min_prob = st.slider("Minimum ProbUp", 0.0, 1.0, 0.0, 0.01)
-                top_n = st.number_input("Top N to chart", min_value=1, max_value=100, value=20)
+    with share_tab:
+        render_share_tab(
+            include_up=up,
+            include_down=down,
+            prob_range=prob_range,
+            limit_option=limit_option,
+            sort_option=sort_option,
+        )
 
-            filtered = df.copy()
-            if "Signal" in filtered.columns and selected_signals:
-                filtered = filtered[filtered["Signal"].isin(selected_signals)]
-            if "ProbUp" in filtered.columns:
-                filtered = filtered[filtered["ProbUp"] >= min_prob]
+    with probability_tab:
+        render_probability_tab(
+            include_up=up,
+            include_down=down,
+            prob_range=prob_range,
+            limit_option=limit_option,
+            sort_option=sort_option,
+        )
 
-            filtered = filtered.sort_values(by="ProbUp", ascending=False).reset_index(drop=True)
-            st.dataframe(filtered)
+    with classification_tab:
+        render_classification_tab()
 
-            # Chart top N
-            if not filtered.empty and "Ticker" in filtered.columns and "ProbUp" in filtered.columns:
-                chart_df = filtered.head(top_n).set_index("Ticker")["ProbUp"]
-                st.subheader("Top entries by ProbUp")
-                st.bar_chart(chart_df)
 
-            # Download
-            csv = filtered.to_csv(index=False).encode("utf-8")
-            st.download_button("Download filtered results as CSV", data=csv, file_name="results_filtered.csv", mime="text/csv")
-    else:
-        st.info("No `results_stock_prediction.json` file found in the project folder. Add it to the repo or use the Upload CSV option to display data.")
-
-elif option == "Price: V (Visa)":
-    st.header("Visa (V) — Price chart")
-    import os
-    csv_path = os.path.join("data/prices", "V_US.csv")
-    if os.path.exists(csv_path):
-        try:
-            prices = pd.read_csv(csv_path)
-        except Exception as e:
-            st.error(f"Failed to read {csv_path}: {e}")
-        else:
-            # Expect columns: Date,Open,High,Low,Close,Volume
-            if "Date" in prices.columns:
-                try:
-                    prices["Date"] = pd.to_datetime(prices["Date"])
-                except Exception:
-                    # maybe epoch ms
-                    try:
-                        prices["Date"] = pd.to_datetime(prices["Date"], unit="ms")
-                    except Exception:
-                        pass
-            prices = prices.sort_values("Date")
-            prices = prices.set_index("Date")
-
-            st.write(f"Showing {len(prices)} rows from `{csv_path}`")
-
-            # Date range selector
-            min_date = prices.index.min().date()
-            max_date = prices.index.max().date()
-            start, end = st.slider("Date range", value=(min_date, max_date), min_value=min_date, max_value=max_date)
-            sel = prices.loc[str(start):str(end)]
-
-            # Line chart of Close price
-            if "Close" in sel.columns:
-                st.subheader("Close price")
-                st.line_chart(sel["Close"])
-
-            # OHLC area (Open/High/Low/Close) if available
-            if all(c in sel.columns for c in ["Open", "High", "Low", "Close"]):
-                st.subheader("OHLC (Close, Open, High, Low)")
-                st.area_chart(sel[["Open", "High", "Low", "Close"]])
-
-            # Volume
-            if "Volume" in sel.columns:
-                st.subheader("Volume")
-                st.bar_chart(sel["Volume"])
-
-            # Allow CSV download of the selected range
-            csv_bytes = sel.reset_index().to_csv(index=False).encode("utf-8")
-            st.download_button("Download selected range as CSV", data=csv_bytes, file_name="V_prices_selected.csv", mime="text/csv")
-    else:
-        st.info(f"No price file found at `{csv_path}`. Make sure the `prices` folder contains V_US.csv")
-
-elif option == "Upload CSV":
-    st.header("Upload a CSV file")
-    uploaded_file = st.file_uploader("Choose a CSV file", type=["csv"]) 
-    if uploaded_file is not None:
-        try:
-            df = pd.read_csv(uploaded_file)
-            st.write("Preview:")
-            st.dataframe(df)
-            # show numeric columns as a chart if any
-            num = df.select_dtypes(include=[np.number])
-            if not num.empty:
-                st.line_chart(num)
-        except Exception as e:
-            st.error(f"Failed to read CSV: {e}")
+if __name__ == "__main__":
+    main()
 
 st.markdown("---")
-st.caption("This app is intentionally minimal — it's just to test deployment and routing.")
-
-# create here down
+st.caption("This web app is a students project created for the Master Information Technology at the Ferdinand Porsche FernFH in Wiener Neustadt, Austria. This site is not for commercial use and is intended for educational and demonstration purposes only.")

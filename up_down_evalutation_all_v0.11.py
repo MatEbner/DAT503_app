@@ -34,6 +34,10 @@ MOMENTUM = 5                           # Anzahl der Tage für die Berechnung des
 VOLUME = 5                             # Anzahl der Tage für die Berechnung der Volume-Dynamik
 
 REPORT_FILE_NAME = f"Klassifikationsreport_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+# Reports-Verzeichnis anlegen und Pfad setzen
+REPORTS_DIR = Path(r"reports")
+REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+REPORT_FILE_PATH = REPORTS_DIR / REPORT_FILE_NAME
 
 # Mapping zwischen Aktienkurs-Dateinamen und Unternehmenskennzahlen-Dateinamen
 # Aktienkurs-Dateinamen ohne Suffix (_US.csv etc.)
@@ -272,7 +276,7 @@ def evaluate_model(
     # weighted avg = Durchschnitt von Precision, Recall und F1, gewichtet nach support (Klassen mit mehr Beispielen zählen stärker)
     print(classification_report(y_test, y_pred, digits=3))
     # Print to txt
-    with open(REPORT_FILE_NAME, "w", encoding="utf-8") as f:
+    with open(REPORT_FILE_PATH, "w", encoding="utf-8") as f:
         print("=== Klassifikationsreport (Test) ===", file=f)
         print(classification_report(y_test, y_pred, digits=3), file=f)
 
@@ -281,8 +285,7 @@ def evaluate_model(
     try:
         auc = roc_auc_score(y_test, y_pred_proba)
         print(f"ROC-AUC: {auc:.3f}")
-
-        with open(REPORT_FILE_NAME, "a", encoding="utf-8") as f:
+        with open(REPORT_FILE_PATH, "a", encoding="utf-8") as f:
             print(f"ROC-AUC: {auc:.3f}", file=f)
     except ValueError:
         print("ROC-AUC nicht berechenbar (nur eine Klasse im Test-Set).")
@@ -302,7 +305,7 @@ def evaluate_model(
     print(f"Precision: {prec:.3f}")
     print(f"Recall   : {rec:.3f}")
 
-    with open(REPORT_FILE_NAME, "a", encoding="utf-8") as f:
+    with open(REPORT_FILE_PATH, "a", encoding="utf-8") as f:
         print(f"Accuracy : {acc:.3f}", file=f)
         print(f"Precision: {prec:.3f}", file=f)
         print(f"Recall   : {rec:.3f}", file=f)
@@ -589,7 +592,7 @@ def main():
     print("\n=== Feature Importances (globales Modell) ===")
     print(importances.sort_values(ascending=False))
 
-    with open(REPORT_FILE_NAME, "a", encoding="utf-8") as f:
+    with open(REPORT_FILE_PATH, "a", encoding="utf-8") as f:
         print("\n=== Feature Importances (globales Modell) ===", file=f)
         print(importances.sort_values(ascending=False), file=f)
 
