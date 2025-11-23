@@ -141,13 +141,13 @@ FEATURE_COLUMNS_WITH_TICKER = FEATURE_COLUMNS + ["Ticker_cat"]
 
 ## Trainingsprozess
 
-1. Datenzusammenführung
-    Alle Ticker werden in full_panel untereinander konkateniert.
-2. Bereinigung
+1. Datenzusammenführung:
+    Alle Ticker werden in full_panel-DataFrame untereinander konkateniert.
+2. Bereinigung:
     Zeilen mit fehlenden Werten in den Modellfeatures, Target, Return und Datum werden entfernt.
-3. Zeitbasierter Split
-    Über time_based_train_test_split wird das DataFrame nach Datum sortiert und in Train und Test gesplittet, wobei das Test-Set am Ende der Zeitreihe liegt (realistisch für Zeitreihen).
-4. Modell
+3. Zeitbasierter Split:
+    Über time_based_train_test_split wird das DataFrame nach Datum sortiert und in Train und Test gesplittet, wobei das Test-Set am Ende der Zeitreihe liegt.
+4. Modell:
   Es wird ein LGBMClassifier mit festen Hyperparametern trainiert:
     ```
     clf = LGBMClassifier(
@@ -159,8 +159,8 @@ FEATURE_COLUMNS_WITH_TICKER = FEATURE_COLUMNS + ["Ticker_cat"]
         random_state=42,
     )
     ```
-5. Evaluierung
-    In evaluate_model wird das Modell anhand verschiedener Metriken auf dem Test-Set ausgewertet, anschließend erfolgt ein Mini-Backtest, und es wird eine mögliche Gesamtrendite bei Verwendung des Up/Down-Schwellwerts für den Testzeitraum berechnet.
+5. Evaluierung:
+    In der evaluate_model-Funktion wird das Modell anhand verschiedener Metriken auf dem Test-Set ausgewertet, anschließend erfolgt ein Mini-Backtest, und es wird eine mögliche Gesamtrendite bei Verwendung des Up/Down-Schwellwerts für den Testzeitraum berechnet.
 
 ---
 
@@ -324,8 +324,6 @@ Diese Frage kann man erst über den Backtest und zusätzliche KPIs (Sharpe, Draw
 
         Derzeit werden nur die im TICKER_MAP hinterlegten großen Titel genutzt.
 
-        Es ist nicht klar, wie breit der Zeitraum der Daten ist und wie stabil die Beziehungen über verschiedene Marktphasen sind (Bullenmarkt, Krisen etc.).
-
         Fundamentaldaten liegen meist quartalsweise vor, Kursdaten täglich. Die merge_asof Logik ist sinnvoll, kann aber bei lückenhaften Reports zu vielen NaN und damit entfernten Zeilen führen.
 
 5. Modellierung und Hyperparameter
@@ -385,16 +383,12 @@ Diese Frage kann man erst über den Backtest und zusätzliche KPIs (Sharpe, Draw
           Rolling Min/Max, Quantile, Drawdown Features
 
         Qualitätskontrolle der Fundamentals:
-          Ggf. fehlende Quartalswerte mittels Vorwärtsfüllen (forward fill), sofern betriebswirtschaftlich sinnvoll
-          Zusätzlich: Flags für „fehlende Daten“ als separate Binärfeatures.
+          Ggf. fehlende Quartalswerte mittels Forward Fill, sofern betriebswirtschaftlich sinnvoll
+          Zusätzlich: Flags für „fehlende Daten“ als separate Binärfeatures verwenden.
 
 3. Branchen-spezifische Modelle
 
         Überprüfen, ob die Klassifikationsleistung besser wird, wenn man nur Aktien derselben Branche verwendet.
-
-          Schritt 1: Branchen-Zuordnung pro Ticker hinterlegen (Tech, Financials, Energy, Healthcare etc.).
-          Schritt 2: Für jede Branche separat ein Modell trainieren.
-          Schritt 3: Klassifikationsreports (Accuracy, ROC-AUC etc.) je Branche und gegen Gesamtmodell vergleichen.
 
         Hypothese:
           Aktien innerhalb einer Branche reagieren ähnlicher auf fundamentale und technische Signale.
@@ -434,7 +428,7 @@ Diese Frage kann man erst über den Backtest und zusätzliche KPIs (Sharpe, Draw
           Confusion Matrix, Precision-Recall AUC, Matthews Correlation Coefficient.
 
         Zeitreihen-CV:
-          Mehrere zeitliche Splits (Rollende Fenster) helfen zu sehen, ob das Modell nur in einem Zeitraum „glücklicherweise“ funktioniert.
+          Mehrere zeitliche Splits (Rolling Window) helfen zu sehen, ob das Modell nur in einem Zeitraum „glücklicherweise“ funktioniert.
 
         Trading-spezifische Metriken im Backtest:
           Sharpe Ratio, Max Drawdown, Hit Ratio, durchschnittlicher Tradegewinn.
