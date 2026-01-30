@@ -24,12 +24,6 @@
         "Signal":"UP"
     },
     {
-        "Ticker":"SAP",
-        "Date":1769558400000,
-        "ProbUp":0.6097517081,
-        "Signal":"UP"
-    },
-    {
         "Ticker":"CRM",
         "Date":1769644800000,
         "ProbUp":0.5952985556,
@@ -189,6 +183,12 @@
         "Ticker":"RTX",
         "Date":1769644800000,
         "ProbUp":0.4795045833,
+        "Signal":"DOWN"
+    },
+    {
+        "Ticker":"SAP",
+        "Date":1769644800000,
+        "ProbUp":0.4781136643,
         "Signal":"DOWN"
     },
     {
